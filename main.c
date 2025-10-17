@@ -17,6 +17,7 @@ void calculate_numbers(int width, int height, Cell cells[width][height]);
 void move_cursor(int x, int y);
 void open_cell(int x, int y, int width, int height, Cell cells[width][height]);
 void flag_cell(int x, int y, int width, int height, Cell cells[width][height]);
+bool is_mine(int x, int y, int width, int height, Cell cells[width][height]);
 
 int main(void) {
     int width = 10;
@@ -30,8 +31,13 @@ int main(void) {
 
     initscr();
     noecho();
+    start_color();
+    use_default_colors();
+    init_pair(9, COLOR_RED, COLOR_BLACK);
+    // TODO: more colors
 
     place_mines(mines, width, height, cells);
+    calculate_numbers(width, height, cells);
     draw_board(width, height);
 
     while (!quit) {
@@ -80,11 +86,23 @@ void place_mines(int mines, int width, int height, Cell cells[width][height]) {
     }
 }
 
+bool is_mine(int x, int y, int width, int height, Cell cells[width][height]) {
+    if (x < 0 || y < 0 || x >= width || y >= height) {
+        return false;
+    }
+    return cells[x][y].mine;
+}
+
 void calculate_numbers(int width, int height, Cell cells[width][height]) {
+    int m;
     for (int x = 0; x < width; ++x) {
         for (int y = 0; y < height; ++y) {
             if (cells[x][y].mine) continue;
-            // TODO: actual logic
+            m = 0;
+            m += is_mine(x - 1, y - 1, width, height, cells) + is_mine(x, y - 1, width, height, cells) + is_mine(x + 1, y - 1, width, height, cells);
+            m += is_mine(x - 1, y, width, height, cells) + is_mine(x + 1, y, width, height, cells);
+            m += is_mine(x - 1, y + 1, width, height, cells) + is_mine(x, y + 1, width, height, cells) + is_mine(x + 1, y + 1, width, height, cells);
+            cells[x][y].number = m;
         }
     }
 }
@@ -94,14 +112,24 @@ void open_cell(int x, int y, int width, int height, Cell cells[width][height]) {
         return;
     }
 
+    // TODO: losing
     if (cells[x][y].flag || cells[x][y].open) {
         return;
     }
 
     cells[x][y].open = true;
+    move_cursor(x, y);
     if (cells[x][y].number == 0) {
         printw(" ");
-        // TODO: open surrounding cells
+        open_cell(x - 1, y - 1, width, height, cells);
+        open_cell(x - 1, y, width, height, cells);
+        open_cell(x - 1, y + 1, width, height, cells);
+        open_cell(x, y - 1, width, height, cells);
+        open_cell(x, y + 1, width, height, cells);
+        open_cell(x + 1, y - 1, width, height, cells);
+        open_cell(x + 1, y, width, height, cells);
+        open_cell(x + 1, y + 1, width, height, cells);
+        move_cursor(x, y);
     } else {
         printw("%d", cells[x][y].number);
     }
@@ -117,6 +145,8 @@ void flag_cell(int x, int y, int width, int height, Cell cells[width][height]) {
         printw("#");
     } else {
         cells[x][y].flag = true;
+        attron(COLOR_PAIR(9));
         printw("F");
+        attroff(COLOR_PAIR(9));
     }
 }
