@@ -18,11 +18,12 @@ void move_cursor(int x, int y);
 void open_cell(int x, int y, int width, int height, Cell cells[width][height]);
 void flag_cell(int x, int y, int width, int height, Cell cells[width][height]);
 bool is_mine(int x, int y, int width, int height, Cell cells[width][height]);
+void set_colors();
 
 int main(void) {
     int width = 10;
     int height = 10;
-    int mines = 10;
+    int mines = 20;
     int sel_x = 0;
     int sel_y = 0;
     Cell cells[width][height];
@@ -31,10 +32,7 @@ int main(void) {
 
     initscr();
     noecho();
-    start_color();
-    use_default_colors();
-    init_pair(9, COLOR_RED, COLOR_BLACK);
-    // TODO: more colors
+    set_colors();
 
     place_mines(mines, width, height, cells);
     calculate_numbers(width, height, cells);
@@ -65,9 +63,14 @@ void move_cursor(int x, int y) {
 void draw_board(int width, int height) {
     for (int x = 0; x < width; ++x) {
         for (int y = 0; y < height; ++y) {
+            attron(COLOR_PAIR(9));
             mvprintw(y * 2    , x * 4, " --- ");
-            mvprintw(y * 2 + 1, x * 4, "| # |");
+            mvprintw(y * 2 + 1, x * 4, "|   |");
             mvprintw(y * 2 + 2, x * 4, " --- ");
+            attroff(COLOR_PAIR(9));
+            attron(COLOR_PAIR(0));
+            mvprintw(y * 2 + 1, x * 4 + 2, "#");
+            attroff(COLOR_PAIR(0));
         }
     }
     move_cursor(0, 0);
@@ -112,7 +115,7 @@ void open_cell(int x, int y, int width, int height, Cell cells[width][height]) {
         return;
     }
 
-    // TODO: losing
+    // TODO: losing, fast opening
     if (cells[x][y].flag || cells[x][y].open) {
         return;
     }
@@ -131,7 +134,9 @@ void open_cell(int x, int y, int width, int height, Cell cells[width][height]) {
         open_cell(x + 1, y + 1, width, height, cells);
         move_cursor(x, y);
     } else {
+        attron(COLOR_PAIR(cells[x][y].number));
         printw("%d", cells[x][y].number);
+        attroff(COLOR_PAIR(cells[x][y].number));
     }
 }
 
@@ -142,11 +147,50 @@ void flag_cell(int x, int y, int width, int height, Cell cells[width][height]) {
 
     if (cells[x][y].flag) {
         cells[x][y].flag = false;
+        attron(COLOR_PAIR(0));
         printw("#");
+        attroff(COLOR_PAIR(0));
     } else {
         cells[x][y].flag = true;
-        attron(COLOR_PAIR(9));
+        attron(COLOR_PAIR(10));
+        attron(A_BOLD);
         printw("F");
-        attroff(COLOR_PAIR(9));
+        attroff(COLOR_PAIR(10));
+        attroff(A_BOLD);
     }
+}
+
+void set_colors() {
+    // TODO: check if terminal supports colors
+    start_color();
+    use_default_colors();
+
+    init_color(0, 800, 800, 800); // Closed cells
+    init_color(9, 400, 400, 400);    // Cell borders
+    init_color(10, 800, 800, 0);   // Flags
+    init_color(11, 800, 0, 0);      // Mines
+
+    // Colors 1..8 are for numbers
+    init_color(1, 0, 0, 800);       // Blue
+    init_color(2, 0, 800, 0);       // Green
+    init_color(3, 800, 0, 0);       // Red
+    init_color(4, 0, 0, 600);        // Dark blue
+    init_color(5, 400, 400, 0);      // Maroon
+    init_color(6, 0, 400, 400);      // Cyan
+    init_color(7, 400, 400, 400);    // Gray
+    init_color(8, 800, 800, 800); // White
+
+    // Color pairs
+    init_pair(0, 0, -1);
+    init_pair(1, 1, -1);
+    init_pair(2, 2, -1);
+    init_pair(3, 3, -1);
+    init_pair(4, 4, -1);
+    init_pair(5, 5, -1);
+    init_pair(6, 6, -1);
+    init_pair(7, 7, -1);
+    init_pair(8, 8, -1);
+    init_pair(9, 9, -1);
+    init_pair(10, 10, -1);
+    init_pair(11, 11, -1);
 }
