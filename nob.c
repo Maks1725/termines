@@ -9,6 +9,7 @@ int main(int argc, char **argv) {
     nob_cmd_append(&cmd, "-o", "termines");
     nob_cmd_append(&cmd, "-Wall", "-Wextra");
     nob_cmd_append(&cmd, "-lncurses");
+    //nob_cmd_append(&cmd, "-g");
 
     if (!nob_cmd_run(&cmd)) {
         return 1;
