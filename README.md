@@ -1,5 +1,5 @@
 # Termines
-Terminal minesweeper
+Terminal minesweeper  
 Build system can be found [here](https://github.com/tsoding/nob.h)  
 Requirements: gcc, ncurses
 
