@@ -12,24 +12,30 @@ typedef struct {
 } Cell;
 
 void draw_board(int width, int height);
+void update_counter(int mines_left, int width);
+void win(int width);
+void lose(int width, int height, Cell cells[width][height]);
 void place_mines(int mines, int width, int height, Cell cells[width][height]);
 void calculate_numbers(int width, int height, Cell cells[width][height]);
 void move_cursor(int x, int y);
-void open_cell(int x, int y, int width, int height, Cell cells[width][height]);
-void open_neighbors(int x, int y, int width, int height, Cell cells[width][height]);
-void flag_cell(int x, int y, int width, int height, Cell cells[width][height]);
+void open_cell(int x, int y, int *opened_cells, int width, int height, Cell cells[width][height]);
+void open_neighbors(int x, int y, int *opended_cells, int width, int height, Cell cells[width][height]);
+void flag_cell(int x, int y, int *flags, int width, int height, Cell cells[width][height]);
 int get_neighbor_flags(int x, int y, int width, int height, Cell cells[width][height]);
 bool is_mine(int x, int y, int width, int height, Cell cells[width][height]);
 bool is_flag(int x, int y, int width, int height, Cell cells[width][height]);
 void set_colors();
 
 int main(void) {
-    // TODO: winning, losing, time
-    int width = 10;
-    int height = 10;
-    int mines = 10;
+    // TODO: specify board size and mines in arguments, time
+    const int width = 10;
+    const int height = 10;
+    const int mines = 10;
     int sel_x = 0;
     int sel_y = 0;
+    int flags = 0;
+    int opened_cells = 0;
+    const int total_cells = width * height;
     Cell cells[width][height];
     memset(cells, 0, sizeof(cells));
     bool quit = false;
@@ -43,6 +49,11 @@ int main(void) {
     draw_board(width, height);
 
     while (!quit) {
+        if (opened_cells + mines == total_cells) {
+            win(width);
+        }
+        update_counter(mines - flags, width);
+        move_cursor(sel_x, sel_y);
         switch (getch()) {
             case 'q': quit = true; continue;
             case 'h': sel_x = sel_x - 1 >= 0 ? sel_x - 1 : width - 1; break;
@@ -51,15 +62,14 @@ int main(void) {
             case 'j': sel_y = sel_y + 1 < height ? sel_y + 1 : 0; break;
             case 'd':
                 if (cells[sel_x][sel_y].open && cells[sel_x][sel_y].number > 0 && cells[sel_x][sel_y].number == get_neighbor_flags(sel_x, sel_y, width, height, cells)) {
-                    open_neighbors(sel_x, sel_y, width, height, cells);
+                    open_neighbors(sel_x, sel_y, &opened_cells, width, height, cells);
                 } else {
-                    open_cell(sel_x, sel_y, width, height, cells);
+                    open_cell(sel_x, sel_y, &opened_cells, width, height, cells);
                 }
                 break;
-            case 'f': flag_cell(sel_x, sel_y, width, height, cells); break;
+            case 'f': flag_cell(sel_x, sel_y, &flags, width, height, cells); break;
             default: continue;
         }
-        move_cursor(sel_x, sel_y);
     }
 
     endwin();
@@ -83,7 +93,32 @@ void draw_board(int width, int height) {
             attroff(COLOR_PAIR(0));
         }
     }
-    move_cursor(0, 0);
+    mvprintw(1, 4 * width + 3, "Mines left:");
+    mvprintw(5, 4 * width + 3, "Controls:");
+    mvprintw(6, 4 * width + 3, "Movement - hjkl");
+    mvprintw(7, 4 * width + 3, "Open cell - d");
+    mvprintw(8, 4 * width + 3, "Flag cell - f");
+}
+
+void update_counter(int mines_left, int width) {
+    mvprintw(1, 4 * width + 15, "%3d", mines_left);
+}
+
+void win(int width) {
+    mvprintw(3, 4 * width + 3, "You Win!");
+}
+
+void lose(int width, int height, Cell cells[width][height]) {
+    mvprintw(3, 4 * width + 3, "You Lose!");
+    for (int x = 0; x < width; ++x) {
+        for (int y = 0; y < height; ++y) {
+            if (cells[x][y].mine) {
+                attron(COLOR_PAIR(11));
+                mvprintw(y * 2 + 1, x * 4 + 2, "X");
+                attroff(COLOR_PAIR(11));
+            }
+        }
+    }
 }
 
 void place_mines(int mines, int width, int height, Cell cells[width][height]) {
@@ -127,19 +162,18 @@ void calculate_numbers(int width, int height, Cell cells[width][height]) {
     }
 }
 
-void open_neighbors(int x, int y, int width, int height, Cell cells[width][height]) {
-    open_cell(x - 1, y - 1, width, height, cells);
-    open_cell(x - 1, y, width, height, cells);
-    open_cell(x - 1, y + 1, width, height, cells);
-    open_cell(x, y - 1, width, height, cells);
-    open_cell(x, y + 1, width, height, cells);
-    open_cell(x + 1, y - 1, width, height, cells);
-    open_cell(x + 1, y, width, height, cells);
-    open_cell(x + 1, y + 1, width, height, cells);
-    move_cursor(x, y);
+void open_neighbors(int x, int y, int *opened_cells, int width, int height, Cell cells[width][height]) {
+    open_cell(x - 1, y - 1, opened_cells, width, height, cells);
+    open_cell(x - 1, y, opened_cells, width, height, cells);
+    open_cell(x - 1, y + 1, opened_cells, width, height, cells);
+    open_cell(x, y - 1, opened_cells, width, height, cells);
+    open_cell(x, y + 1, opened_cells, width, height, cells);
+    open_cell(x + 1, y - 1, opened_cells, width, height, cells);
+    open_cell(x + 1, y, opened_cells, width, height, cells);
+    open_cell(x + 1, y + 1, opened_cells, width, height, cells);
 }
 
-void open_cell(int x, int y, int width, int height, Cell cells[width][height]) {
+void open_cell(int x, int y, int *opened_cells, int width, int height, Cell cells[width][height]) {
     if (x < 0 || y < 0 || x >= width || y >= height) {
         return;
     }
@@ -148,11 +182,17 @@ void open_cell(int x, int y, int width, int height, Cell cells[width][height]) {
         return;
     }
 
+    if (cells[x][y].mine) {
+        lose(width, height, cells);
+        return;
+    }
+
     cells[x][y].open = true;
+    (*opened_cells)++;
     move_cursor(x, y);
     if (cells[x][y].number == 0) {
         printw(" ");
-        open_neighbors(x, y, width, height, cells);
+        open_neighbors(x, y, opened_cells, width, height, cells);
     } else {
         attron(COLOR_PAIR(cells[x][y].number));
         printw("%d", cells[x][y].number);
@@ -160,23 +200,23 @@ void open_cell(int x, int y, int width, int height, Cell cells[width][height]) {
     }
 }
 
-void flag_cell(int x, int y, int width, int height, Cell cells[width][height]) {
+void flag_cell(int x, int y, int *flags, int width, int height, Cell cells[width][height]) {
     if (cells[x][y].open) {
         return;
     }
 
     if (cells[x][y].flag) {
         cells[x][y].flag = false;
+        (*flags)--;
         attron(COLOR_PAIR(0));
         printw("#");
         attroff(COLOR_PAIR(0));
     } else {
         cells[x][y].flag = true;
+        (*flags)++;
         attron(COLOR_PAIR(10));
-        attron(A_BOLD);
         printw("@");
         attroff(COLOR_PAIR(10));
-        attroff(A_BOLD);
     }
 }
 
@@ -221,4 +261,6 @@ void set_colors() {
     init_pair(9, 9, -1);
     init_pair(10, 10, -1);
     init_pair(11, 11, -1);
+
+    attron(A_BOLD);
 }
