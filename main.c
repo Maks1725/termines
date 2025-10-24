@@ -26,11 +26,16 @@ bool is_mine(int x, int y, int width, int height, Cell cells[width][height]);
 bool is_flag(int x, int y, int width, int height, Cell cells[width][height]);
 void set_colors();
 
-int main(void) {
-    // TODO: specify board size and mines in arguments, time
-    const int width = 10;
-    const int height = 10;
-    const int mines = 10;
+int main(int argc, char **argv) {
+    // TODO: time
+    int width = 10;
+    int height = 10;
+    int mines = 10;
+    if (argc == 4) {
+        width = atoi(argv[1]);
+        height = atoi(argv[2]);
+        mines = atoi(argv[3]);
+    }
     int sel_x = 0;
     int sel_y = 0;
     int flags = 0;
